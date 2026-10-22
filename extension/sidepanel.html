@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Adaptive RAG
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="sidepanel.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+    <!-- HEADER -->
+
+    <header class="header">
+
+        <div class="brand">
+
+            <div class="logo">
+                ✦
+            </div>
+
+            <div>
+
+                <div class="title">
+                    Adaptive RAG
+                </div>
+
+                <div class="subtitle">
+                    AI Verification Engine
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="platform"
+            class="platform"
+        >
+            Waiting...
+        </div>
+
+    </header>
+
+
+    <!-- CURRENT RESPONSE -->
+
+    <section>
+
+        <div class="section-header">
+
+            <span>
+                CURRENT RESPONSE
+            </span>
+
+            <span
+                id="status"
+                class="status"
+            ></span>
+
+        </div>
+
+
+        <div
+            id="response"
+            class="response"
+        >
+
+            Waiting for an AI response...
+
+        </div>
+
+        <!-- MANUAL INPUT -->
+        <div style="margin-top: 10px;">
+            <textarea id="manualInput" style="
+                width: 100%;
+                padding: 8px;
+                background: rgba(255,255,255,0.05);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--text);
+                font-size: 11px;
+                resize: vertical;
+                min-height: 60px;
+                font-family: inherit;
+                box-sizing: border-box;
+            " placeholder="Or paste AI response here manually..."></textarea>
+        </div>
+
+        <button
+            id="analyzeBtn"
+            class="analyze-btn"
+        >
+
+            ✦ Analyze Response
+
+        </button>
+
+        <button
+            id="clearResponse"
+            class="clear-response-btn"
+        >
+
+            ✕ Clear Response
+
+        </button>
+
+    </section>
+
+
+    <!-- RELIABILITY -->
+
+    <section class="reliability-card">
+
+        <div class="section-header">
+            RELIABILITY
+        </div>
+
+
+        <div class="score-row">
+
+            <div
+                id="score"
+                class="score"
+            >
+                --
+            </div>
+
+
+            <div
+                id="scoreLabel"
+                class="score-label"
+            >
+                Waiting
+
+            </div>
+
+        </div>
+
+
+        <div class="score-bar">
+
+            <div
+                id="scoreFill"
+                class="score-fill"
+            ></div>
+
+        </div>
+
+    </section>
+
+
+    <!-- CLAIM ANALYSIS -->
+
+    <section>
+
+        <div class="section-header">
+
+            <span>
+                CLAIM ANALYSIS
+            </span>
+
+            <span
+                id="claimCount"
+            >
+                0
+            </span>
+
+        </div>
+
+
+        <div
+            id="claims"
+        >
+
+            <div class="empty">
+
+                Claims will appear after analysis.
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- SOURCE TRACE -->
+
+    <section>
+
+        <div class="section-header">
+
+            <span>
+                SOURCE TRACE
+            </span>
+
+            <span
+                id="sourceCount"
+            >
+                0
+            </span>
+
+        </div>
+
+
+        <div
+            id="sources"
+        >
+
+            <div class="empty">
+
+                Verification sources will appear here.
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- HISTORY -->
+
+    <section>
+
+        <div class="section-header">
+
+            RECENT ANALYSES
+
+        </div>
+
+
+        <div
+            id="history"
+        ></div>
+
+    </section>
+
+
+    <!-- FOOTER -->
+
+    <footer>
+
+        <div>
+
+            <span class="online"></span>
+
+            RAG Engine
+
+        </div>
+
+
+        <button
+            id="clearHistory"
+        >
+
+            Clear
+
+        </button>
+
+    </footer>
+
+
+</div>
+
+
+<script src="sidepanel.js"></script>
+
+</body>
+
+</html>
