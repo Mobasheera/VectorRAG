@@ -1,224 +1,321 @@
 # VectorRAG
 
-A RAG-based framework for detecting, evaluating, and mitigating hallucinations in LLM-generated responses through evidence-grounded retrieval and response verification.
+**An adaptive Retrieval-Augmented Generation (RAG) framework for detecting, evaluating, and reducing unsupported claims in AI-generated responses.**
 
-## Overview
+VectorRAG is a browser-extension-based research project that analyzes AI-generated answers against retrieved web evidence. It combines web search, trusted-source filtering, semantic retrieval, and natural-language-inference-based verification to help users assess whether a response is supported by evidence.
 
-Large Language Models (LLMs) can generate fluent and convincing responses that contain information that is inaccurate, unsupported, or not present in the available knowledge source. This problem, commonly referred to as **hallucination**, becomes particularly important in applications where factual reliability and evidence-based responses are required.
+> **Project status:** Under development. Verification results depend on the quality, relevance, and availability of retrieved sources. VectorRAG is an aid for assessing responses, not a guarantee that an answer is true.
 
-**VectorRAG** focuses on improving the reliability of Retrieval-Augmented Generation (RAG) systems by introducing mechanisms to identify unsupported information in generated responses, evaluate their faithfulness against retrieved evidence, and mitigate detected hallucinations.
+## Table of Contents
 
-The system is designed around the principle that an AI-generated response should not only be relevant to a user's query, but should also be **grounded in verifiable evidence**.
+- [Problem Statement](#problem-statement)
+- [Objectives](#objectives)
+- [Key Features](#key-features)
+- [How It Works](#how-it-works)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Installation and Setup](#installation-and-setup)
+- [Loading the Browser Extension](#loading-the-browser-extension)
+- [API Endpoints](#api-endpoints)
+- [Configuration](#configuration)
+- [Testing](#testing)
+- [Limitations](#limitations)
+- [Future Scope](#future-scope)
+- [Contributors](#contributors)
+- [License](#license)
 
 ## Problem Statement
 
-Although RAG systems improve the factuality of LLMs by providing external knowledge, retrieved information does not guarantee that the final generated response is completely faithful to that information.
+Large Language Models (LLMs) can generate fluent answers that include inaccurate, unsupported, or fabricated information. Retrieval-Augmented Generation can improve answers by supplying external context, but retrieving documents alone does not guarantee that every generated claim is supported by reliable evidence.
 
-A response may:
-
-* Contain claims that are not supported by the retrieved context.
-* Misinterpret or distort information from the retrieved documents.
-* Combine supported and unsupported information.
-* Generate plausible information that is absent from the knowledge base.
-* Provide an answer with high confidence despite insufficient evidence.
-
-Therefore, there is a need for a framework that can **detect, evaluate, and mitigate hallucinations after or during the RAG generation process**.
+VectorRAG aims to help identify potentially unsupported claims by comparing answer content with retrieved evidence and presenting verification results and sources to the user.
 
 ## Objectives
 
-The primary objectives of the project are:
-
-1. Develop a RAG-based system capable of retrieving relevant information from a knowledge base.
-2. Generate responses grounded in the retrieved evidence.
-3. Detect potentially unsupported or hallucinated claims in generated responses.
-4. Evaluate the faithfulness and reliability of generated responses.
-5. Identify the evidence supporting individual claims.
-6. Mitigate detected hallucinations through response refinement.
-7. Improve the overall accuracy, faithfulness, and trustworthiness of RAG-based AI systems.
-
-## Proposed Workflow
-
-The overall workflow follows a retrieval, generation, verification, and refinement pipeline:
-
-**User Query → Document Retrieval → Context Construction → LLM Response Generation → Hallucination Detection → Faithfulness Evaluation → Response Refinement → Final Response**
-
-### 1. Query Processing
-
-The user's query is processed and transformed into a form suitable for information retrieval.
-
-### 2. Evidence Retrieval
-
-Relevant information is retrieved from the available knowledge base using vector-based semantic retrieval.
-
-### 3. Context-Aware Generation
-
-The retrieved evidence is provided to the language model as context for generating a response.
-
-### 4. Hallucination Detection
-
-The generated response is analyzed to identify claims that may not be supported by the retrieved evidence.
-
-### 5. Faithfulness Evaluation
-
-Detected claims are evaluated against the available evidence to determine whether the response is sufficiently grounded.
-
-### 6. Response Refinement
-
-Unsupported or potentially hallucinated information is flagged and, where possible, the response is refined using the available evidence.
-
-### 7. Final Response
-
-The system produces a response that prioritizes factual consistency and evidence grounding.
+- Analyze responses generated by supported AI chat websites.
+- Retrieve relevant evidence from web sources.
+- Filter and rank evidence using source trust and relevance signals.
+- Compare answer claims with evidence using semantic and natural-language-inference techniques.
+- Highlight claims that appear supported, contradicted, or insufficiently supported by available evidence.
+- Provide evidence and source information that helps users review the result.
 
 ## Key Features
 
-* **Retrieval-Augmented Generation**
-  Combines semantic information retrieval with Large Language Models.
+- **Browser side panel:** A Manifest V3 extension with a dedicated side-panel interface.
+- **AI chat website integration:** Content scripts are configured for ChatGPT, Gemini, Claude, and Microsoft Copilot.
+- **Claim-level analysis:** Breaks an answer into claims for individual verification.
+- **Web search and source collection:** Finds external pages that may provide evidence for a claim.
+- **Trusted-source filtering:** Uses source trust information and configurable thresholds.
+- **Semantic embeddings:** Uses Sentence Transformers to represent text as vectors.
+- **Vector search:** Uses Qdrant to store and retrieve evidence chunks.
+- **Evidence processing:** Extracts webpage text and splits it into chunks for retrieval.
+- **NLI-based verification:** Uses a natural-language-inference model to assess the relationship between a claim and its evidence.
+- **API status and database inspection:** Includes endpoints for checking the service and Qdrant status.
 
-* **Evidence-Grounded Responses**
-  Uses retrieved information as the basis for response generation.
+## How It Works
 
-* **Hallucination Detection**
-  Identifies potentially unsupported claims in generated responses.
+1. **Capture an answer:** The browser extension works with supported AI chat websites and passes answer content to the local backend.
+2. **Extract claims:** The backend separates the answer into individual statements for analysis.
+3. **Find sources:** Web-search logic collects candidate pages relevant to each claim.
+4. **Process evidence:** Page text is extracted, cleaned, and divided into chunks.
+5. **Retrieve relevant context:** Text embeddings and Qdrant vector search help find potentially useful evidence. Relevance and trust thresholds help filter candidates.
+6. **Verify claims:** The verification pipeline compares claims with the retrieved evidence using natural-language-inference signals.
+7. **Return results:** The API returns claim-level results, evidence, and source information for the extension to display.
 
-* **Faithfulness Evaluation**
-  Evaluates whether generated information is supported by the retrieved context.
-
-* **Response Refinement**
-  Attempts to reduce unsupported information through evidence-based correction.
-
-* **Reliability Analysis**
-  Provides a mechanism for assessing the trustworthiness of generated responses.
-
-## System Architecture
+**High-level workflow**
 
 ```text
-                    ┌─────────────────┐
-                    │    User Query   │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │ Query Processing│
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │ Vector Retrieval│
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │ Retrieved       │
-                    │ Evidence        │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │ LLM Generation  │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │ Hallucination   │
-                    │ Detection       │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │ Faithfulness    │
-                    │ Evaluation      │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │ Response        │
-                    │ Refinement      │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │ Reliable Final  │
-                    │ Response        │
-                    └─────────────────┘
+AI Chat Website
+      |
+      v
+Browser Extension
+      |
+      v
+FastAPI Backend
+      |
+      v
+Claim Extraction
+      |
+      v
+Web Search and Source Filtering
+      |
+      v
+Webpage Extraction and Chunking
+      |
+      v
+Sentence Embeddings + Qdrant Retrieval
+      |
+      v
+Claim–Evidence Verification (NLI)
+      |
+      v
+Analysis Results, Evidence, and Sources
+      |
+      v
+Browser Side Panel
 ```
 
-## Why VectorRAG?
+## Technology Stack
 
-Traditional RAG systems primarily focus on retrieving relevant documents and providing them to an LLM. However, retrieval alone does not ensure that every statement in the generated answer is supported by the retrieved evidence.
+| Component | Technology |
+|---|---|
+| Browser extension | JavaScript, HTML, CSS |
+| Extension standard | Chrome Extension Manifest V3 |
+| Backend API | Python, FastAPI |
+| API validation | Pydantic |
+| ML / NLP | PyTorch, Sentence Transformers |
+| Embedding model | `sentence-transformers/all-MiniLM-L6-v2` |
+| NLI model | `cross-encoder/nli-MiniLM2-L6-H768` |
+| Vector database | Qdrant |
+| Web extraction | Requests, Beautiful Soup, lxml |
+| Local database service | Docker Compose |
 
-This project extends the RAG workflow by treating **response verification as an essential part of the generation pipeline**.
+## Project Structure
 
-The goal is not simply to retrieve better information, but to establish a stronger relationship between:
+```text
+VectorRAG/
+├── backend/
+│   ├── __init__.py
+│   ├── config.py
+│   ├── document_processor.py
+│   ├── embeddings.py
+│   ├── main.py
+│   ├── qdrant_manager.py
+│   ├── rag_pipeline.py
+│   ├── requirements.txt
+│   ├── test_verifier.py
+│   ├── trusted_sources.py
+│   ├── verifier.py
+│   └── web_search.py
+├── extension/
+│   ├── background.js
+│   ├── content.js
+│   ├── manifest.json
+│   ├── sidepanel.css
+│   ├── sidepanel.html
+│   └── sidepanel.js
+├── docker-compose.yml
+├── .gitignore
+└── README.md
+```
 
-**Query → Evidence → Claim → Verification → Response**
+## Prerequisites
 
-This makes the system more suitable for knowledge-intensive applications where unsupported AI-generated information can have significant consequences.
+Install the following before running the project:
 
-## Applications
+- **Python 3.10 or later** (a compatible Python version for the pinned dependencies is recommended).
+- **Git**, to clone the repository.
+- **Docker Desktop**, or another Docker Compose installation, to run Qdrant using the supplied Compose file.
+- **A Chromium-based browser** that supports Manifest V3 side-panel extensions, such as Google Chrome or Microsoft Edge.
+- Internet access for downloading ML models and retrieving web pages.
 
-The framework can be applied to domains where reliable and evidence-grounded AI responses are important, including:
+The first run may download machine-learning model files and can take time. Model inference may use substantial RAM and CPU; a compatible NVIDIA GPU can be used by PyTorch when available.
 
-* Education and academic assistance
-* Research and literature analysis
-* Enterprise knowledge management
-* Document-based question answering
-* E-governance information systems
-* Healthcare information systems
-* Knowledge-intensive conversational AI
-* Internal organizational knowledge bases
+## Installation and Setup
 
-## Expected Outcomes
+### 1. Clone the repository
 
-The project aims to provide a functional framework capable of:
+```bash
+git clone https://github.com/Mobasheera/VectorRAG.git
+cd VectorRAG
+```
 
-* Detecting unsupported information in RAG-generated responses.
-* Evaluating the faithfulness of generated answers.
-* Identifying relationships between generated claims and retrieved evidence.
-* Reducing hallucinated content through response refinement.
-* Improving the accuracy and reliability of AI-generated responses.
-* Providing a foundation for evaluating trustworthy RAG systems.
+If you are working from a downloaded ZIP instead, extract it and open a terminal in the extracted `VectorRAG` folder.
 
-## Project Scope
+### 2. Create and activate a Python virtual environment
 
-The current scope focuses on **hallucination detection and mitigation within Retrieval-Augmented Generation systems**.
+**Windows (PowerShell):**
 
-The project primarily investigates the relationship between retrieved evidence and generated responses rather than attempting to eliminate hallucinations from Large Language Models completely.
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks activation, you can use Command Prompt instead:
+
+```bat
+.venv\Scripts\activate.bat
+```
+
+**macOS / Linux:**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install backend dependencies
+
+Run this from the repository root:
+
+```bash
+pip install -r backend/requirements.txt
+```
+
+### 4. Start Qdrant
+
+Ensure Docker Desktop is running, then execute this from the repository root:
+
+```bash
+docker compose up -d
+```
+
+The supplied Compose configuration exposes Qdrant at:
+
+- HTTP API: `http://localhost:6333`
+- gRPC: `localhost:6334`
+
+Qdrant data is stored in a Docker-managed volume.
+
+### 5. Start the backend API
+
+From the repository root, run:
+
+```bash
+uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+Then open:
+
+- Backend status: http://127.0.0.1:8000/
+- Interactive API documentation: http://127.0.0.1:8000/docs
+- Qdrant status: http://127.0.0.1:8000/qdrant-status
+
+Keep the backend terminal running while using the extension.
+
+> **Troubleshooting:** If the backend fails because of a Python import path, try running it from the `backend` directory with `uvicorn main:app --host 127.0.0.1 --port 8000`. Use one launch method at a time. The correct method can depend on the imports and working directory used by the current code version.
+
+## Loading the Browser Extension
+
+1. Start the Qdrant service and backend API first.
+2. Open `chrome://extensions` in Chrome or `edge://extensions` in Microsoft Edge.
+3. Turn on **Developer mode**.
+4. Select **Load unpacked**.
+5. Choose the project's `extension` folder.
+6. Open one of the supported AI chat websites: ChatGPT, Gemini, Claude, or Microsoft Copilot.
+7. Use the VectorRAG extension icon to open the side panel and follow the interface prompts.
+
+The extension manifest currently grants access to the local backend at `127.0.0.1:8000` / `localhost:8000` and lists the supported AI chat domains. If you change the backend host or port, update the extension's host permissions and the backend URL used by the extension.
+
+## API Endpoints
+
+The backend code defines these main endpoints:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/` | Returns service and configuration status. |
+| `POST` | `/analyze` | Analyzes an AI-generated answer and returns claim, evidence, and source results. |
+| `GET` | `/qdrant-status` | Checks Qdrant status. |
+| `GET` | `/qdrant-info` | Returns Qdrant collection information. |
+| `DELETE` | `/reset-qdrant` | Resets Qdrant data/collection state. Use with care. |
+
+For the current request schema and response format, start the backend and inspect the interactive documentation at `http://127.0.0.1:8000/docs`.
+
+**Warning:** The `/reset-qdrant` endpoint is destructive. Do not call it unless you intend to reset the project's vector database.
+
+## Configuration
+
+The backend reads optional settings from environment variables via `python-dotenv`. Defaults are defined in `backend/config.py`.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `QDRANT_URL` | `http://127.0.0.1:6333` | Qdrant connection URL |
+| `QDRANT_COLLECTION` | `trusted_web_sources` | Collection name |
+| `EMBEDDING_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` | Text embedding model |
+| `NLI_MODEL` | `cross-encoder/nli-MiniLM2-L6-H768` | Natural-language-inference model |
+| `MAX_WEB_RESULTS` | `8` | Maximum web results configured |
+| `TOP_K_QDRANT` | `12` | Number of vector-search candidates |
+| `MIN_RETRIEVAL_SIMILARITY` | `0.40` | Minimum retrieval similarity |
+| `MAX_FINAL_EVIDENCE` | `8` | Maximum evidence chunks for final processing |
+| `MIN_TRUST_SCORE` | `0.70` | Minimum source trust threshold |
+| `CHUNK_SIZE` | `900` | Text chunk-size setting |
+| `CHUNK_OVERLAP` | `150` | Text chunk overlap setting |
+
+Additional relevance and NLI filtering parameters are available in `backend/config.py`. These defaults are implementation settings, not universal accuracy guarantees.
+
+If you create a `.env` file, do not commit API keys, credentials, or other secrets to Git. Only add variables that the current implementation actually uses.
+
+## Testing
+
+The repository includes a verifier test file:
+
+```bash
+python -m pytest backend/test_verifier.py
+```
+
+If `pytest` is not installed, install it in your virtual environment first:
+
+```bash
+pip install pytest
+```
+
+Tests may require model downloads or other runtime dependencies. Review test output and the current implementation before interpreting results.
+
+## Limitations
+
+- A claim may be incorrectly classified when sources are incomplete, outdated, inaccessible, or ambiguous.
+- Web search ranking and source trust signals can introduce bias or miss relevant evidence.
+- Semantic similarity and NLI predictions are estimates; they are not proof of truth.
+- Some websites restrict automated access or change their page structure.
+- Model downloads and inference can require significant memory, CPU, and network bandwidth.
+- The project should not be treated as a replacement for expert review in medical, legal, financial, or other high-stakes settings.
+- The extension's configured integrations and local backend setup may need updates as supported websites change.
 
 ## Future Scope
 
-Potential future extensions include:
+- Evaluate detection quality on a curated benchmark of supported and unsupported claims.
+- Add calibrated confidence scores and clearer explanations for uncertain results.
+- Improve evidence attribution so users can trace each verdict to the relevant passage.
+- Support configurable search providers and additional evidence sources.
+- Optimize model loading, caching, and inference latency.
+- Improve test coverage, logging, accessibility, and error handling.
+- Add reproducible evaluation metrics for precision, recall, and faithfulness.
 
-* Claim-level hallucination scoring.
-* More advanced evidence attribution.
-* Multi-document evidence verification.
-* Automated confidence estimation.
-* Adaptive retrieval based on detected unsupported claims.
-* Support for multiple LLMs and retrieval strategies.
-* Benchmark-based evaluation of hallucination mitigation.
-* Integration with agentic RAG systems.
-* Real-time monitoring of RAG response reliability.
+## Contributors
 
-## Research Focus
-
-The project explores the following research questions:
-
-1. How effectively can unsupported claims in RAG-generated responses be detected?
-2. How accurately can generated claims be evaluated against retrieved evidence?
-3. Can automated verification reduce hallucinated information?
-4. How does response refinement affect factual consistency and faithfulness?
-5. What evaluation metrics are most suitable for measuring reliability in hallucination-aware RAG systems?
-
-## Project Status
-
-**Under Development**
-
-This repository contains the ongoing implementation and research work for the project. Components and experimental results may evolve as the system is developed and evaluated.
-
-## Contributing
-
-This project is primarily developed as an academic major project. Suggestions, issues, and discussions related to improving hallucination detection, evaluation, retrieval, and mitigation are welcome.
+VectorRAG is developed as an academic major project. Update this section with the final names and contribution details agreed upon by the project team.
 
 ## License
 
-This project is intended for academic and research purposes.
+No explicit open-source license file is included in the current project snapshot. Until a license is added, reuse and redistribution are subject to the applicable copyright rules. Add a license file if the team intends to grant specific permissions for public use.
